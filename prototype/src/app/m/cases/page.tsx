@@ -8,17 +8,18 @@ import { CaseRow, useMe } from "@/components/mobile/bits";
 import { MScreen } from "@/components/mobile/MScreen";
 import { EmptyState, Input, PageLoader, Tabs, cx } from "@/components/ui";
 import { useT } from "@/i18n";
-import { inMonth, isOpen, WAITING_BILLING, WAITING_PO } from "@/lib/selectors";
+import { ACCRUAL, inMonth, isOpen, WAITING_BILLING, WAITING_PO } from "@/lib/selectors";
 import { useData } from "@/lib/store";
 import type { Case } from "@/lib/types";
 
-type F = "all" | "month" | "open" | "po" | "billing" | "closed";
+type F = "all" | "month" | "open" | "po" | "billing" | "accrual" | "closed";
 const FILTERS: Record<F, (c: Case) => boolean> = {
   all: () => true,
   month: (c) => inMonth(c.caseDate) && c.status !== "CANCELLED",
   open: isOpen,
   po: (c) => WAITING_PO.includes(c.status),
   billing: (c) => WAITING_BILLING.includes(c.status),
+  accrual: (c) => ACCRUAL.includes(c.status),
   closed: (c) => c.status === "CLOSED",
 };
 
@@ -36,7 +37,7 @@ function CasesList() {
   const d = useData();
   const me = useMe();
   const [f, setF] = useState<F>((sp.get("f") as F) in FILTERS ? (sp.get("f") as F) : "all");
-  const [scope, setScope] = useState<"mine" | "accounts">("mine");
+  const [scope, setScope] = useState<"mine" | "accounts">(sp.get("s") === "accounts" ? "accounts" : "mine");
   const [q, setQ] = useState("");
 
   const base = d.cases.filter((c) => (scope === "mine" ? c.repId === me.id : me.hospitalIds.includes(c.hospitalId)));
@@ -55,6 +56,7 @@ function CasesList() {
     { id: "open", label: t("m.cases.open") },
     { id: "po", label: t("m.home.waitingPo") },
     { id: "billing", label: t("m.home.waitingBilling") },
+    { id: "accrual", label: t("m.cases.accrual") },
     { id: "closed", label: t("cs.CLOSED") },
   ];
 

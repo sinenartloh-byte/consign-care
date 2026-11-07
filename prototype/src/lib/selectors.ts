@@ -52,6 +52,41 @@ export function hospitalStats(d: Data, hospitalId: string) {
   return caseStats(d, d.cases.filter((c) => c.hospitalId === hospitalId));
 }
 
+/** Used in a case but not billed yet: the revenue to accrue. */
+export const ACCRUAL: CaseStatus[] = ["USAGE_RECORDED", "QUOTED", "WAITING_PO", "PO_RECEIVED", "REQUISITIONED"];
+export const NEAR_EXP_DAYS = 90;
+
+/** Consignment stock at the given hospitals, one row per lot and hospital, with days to expiry (negative = expired). */
+export function accountExpiry(d: Data, hospitalIds: string[]) {
+  return hospitalIds
+    .flatMap((hid) =>
+      d.stock
+        .filter((s) => s.locationId === hospitalLoc(hid) && s.qty > 0)
+        .map((s) => {
+          const lot = d.lots.find((l) => l.id === s.lotId)!;
+          return { hospitalId: hid, qty: s.qty, lot, product: d.products.find((p) => p.id === lot?.productId)!, daysLeft: daysBetween(DEMO_TODAY, lot.expiryDate) };
+        }),
+    )
+    .filter((x) => x.lot && x.product)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
+/** Rep home tiles: everything across the hospitals the rep is responsible for, not only the rep's own cases. */
+export function accountStats(d: Data, hospitalIds: string[]) {
+  const cases = d.cases.filter((c) => hospitalIds.includes(c.hospitalId));
+  const usageMonth = cases
+    .filter((c) => inMonth(c.caseDate) && c.status !== "CANCELLED")
+    .reduce((s, c) => s + caseUsage(d, c.id).reduce((a, u) => a + u.qty, 0), 0);
+  const exp = accountExpiry(d, hospitalIds);
+  return {
+    usageMonth,
+    quotation: cases.filter((c) => WAITING_PO.includes(c.status)).length,
+    accrual: cases.filter((c) => ACCRUAL.includes(c.status)).reduce((s, c) => s + caseValue(d, c.id), 0),
+    writeOff: exp.filter((x) => x.daysLeft < 0).reduce((s, x) => s + x.qty, 0),
+    nearExp: exp.filter((x) => x.daysLeft >= 0 && x.daysLeft <= NEAR_EXP_DAYS).reduce((s, x) => s + x.qty, 0),
+  };
+}
+
 export function repStats(d: Data, userId: string) {
   return caseStats(d, d.cases.filter((c) => c.repId === userId));
 }

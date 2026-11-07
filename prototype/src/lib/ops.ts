@@ -158,7 +158,8 @@ function takeStock(
 ): string[] {
   const used: string[] = [];
   let remaining = qty;
-  const lots = fefo(d, locationId, productId);
+  // never pick an expired lot on its own (it waits for write-off); a lot the user scanned is still taken as given
+  const lots = fefo(d, locationId, productId).filter((x) => x.lot.id === preferLotId || x.lot.expiryDate >= at.slice(0, 10));
   if (preferLotId) {
     const i = lots.findIndex((x) => x.lot.id === preferLotId);
     if (i > 0) lots.unshift(...lots.splice(i, 1));

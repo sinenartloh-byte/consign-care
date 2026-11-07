@@ -9,7 +9,8 @@ import { MScreen } from "@/components/mobile/MScreen";
 import { Avatar } from "@/components/PersonaSwitcher";
 import { Button, EmptyState, StatTile } from "@/components/ui";
 import { useT } from "@/i18n";
-import { name, repStats } from "@/lib/selectors";
+import { accountStats, name } from "@/lib/selectors";
+import { useFmt } from "@/lib/format";
 import { useData } from "@/lib/store";
 
 export default function HomePage() {
@@ -17,7 +18,8 @@ export default function HomePage() {
   const router = useRouter();
   const d = useData();
   const me = useMe();
-  const stats = repStats(d, me.id);
+  const stats = accountStats(d, me.hospitalIds);
+  const { money } = useFmt();
   const unread = d.notifications.filter((n) => (n.userId === me.id || n.userId === "*") && !n.read).length;
   const activity = d.activity.filter((a) => !a.hospitalId || me.hospitalIds.includes(a.hospitalId)).slice(0, 6);
 
@@ -53,11 +55,12 @@ export default function HomePage() {
               {t("g.viewAll")}
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 @3xl/app:grid-cols-4">
-            <StatTile tone="blue" value={stats.casesMonth} label={t("m.home.myCases")} onClick={() => router.push("/m/cases?f=month")} />
-            <StatTile tone="orange" value={stats.waitingPo} label={t("m.home.waitingPo")} onClick={() => router.push("/m/cases?f=po")} />
-            <StatTile tone="green" value={stats.waitingBilling} label={t("m.home.waitingBilling")} onClick={() => router.push("/m/cases?f=billing")} />
-            <StatTile tone="purple" value={stats.usageMonth} label={t("m.home.usageMonth")} onClick={() => router.push("/m/usage")} />
+          <div className="grid grid-cols-2 gap-3 @3xl/app:grid-cols-5">
+            <StatTile tone="purple" value={stats.usageMonth} label={t("m.home.usage")} onClick={() => router.push("/m/usage?d=month")} />
+            <StatTile tone="blue" value={stats.quotation} label={t("m.home.quotation")} onClick={() => router.push("/m/cases?f=po&s=accounts")} />
+            <StatTile tone="green" value={<span className="text-lg">{money(stats.accrual, 0)}</span>} label={t("m.home.accrual")} onClick={() => router.push("/m/cases?f=accrual&s=accounts")} />
+            <StatTile tone="slate" value={stats.writeOff} label={t("m.home.writeOff")} onClick={() => router.push("/m/expiry?t=expired")} />
+            <StatTile tone="rose" value={stats.nearExp} label={t("m.home.nearExp")} className="col-span-2 @3xl/app:col-span-1" onClick={() => router.push("/m/expiry?t=near")} />
           </div>
           <Link href="/m/cases/new" className="mt-3 block">
             <Button size="lg" className="w-full">

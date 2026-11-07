@@ -11,7 +11,7 @@ import {
   WAREHOUSE,
 } from "./ops";
 
-export const DATA_VERSION = 10;
+export const DATA_VERSION = 11;
 
 /* ---------------------------------------------------------------- mock patients (fictional) */
 
@@ -144,13 +144,13 @@ const LOTS: Record<string, [string, string, number, number][]> = {
   "p-st": [["ST2409", "2026-11-30", 0, 5], ["ST2504", "2028-04-30", 22, 6]],
   "p-as": [["AS2407", "2028-07-31", 25, 6]],
   "p-ct": [["CT2405", "2027-05-31", 18, 6]],
-  "p-bl": [["BL2311", "2027-01-05", 0, 3], ["BL2506", "2028-06-30", 4, 3]],
+  "p-bl": [["BL2304", "2026-09-30", 0, 1], ["BL2311", "2027-01-05", 0, 3], ["BL2506", "2028-06-30", 4, 3]],
   "p-ep-map": [["21005803", "2028-01-31", 4, 4]],
   "p-ep-dx1": [["21004417", "2027-11-30", 4, 4]],
   "p-ep-dx2": [["21005582", "2027-12-31", 4, 4]],
   "p-ep-sheath": [["21006139", "2028-02-29", 4, 4]],
   "p-ep-abl": [["21005906", "2028-01-31", 2, 4]],
-  "p-ep-intro": [["21007264", "2028-05-31", 10, 6]],
+  "p-ep-intro": [["21003118", "2026-10-05", 0, 2], ["21007264", "2028-05-31", 10, 6]],
   "p-pc": [["LOT2264A", "2027-06-30", 550, 0]],
 };
 
@@ -345,7 +345,7 @@ export function buildSeed(): Data {
       const lots = d.stock
         .filter((s) => s.locationId === hospitalLoc(hospitalId) && s.qty > 0)
         .map((s) => ({ s, lot: d.lots.find((l) => l.id === s.lotId)! }))
-        .filter((x) => x.lot.productId === productId)
+        .filter((x) => x.lot.productId === productId && x.lot.expiryDate >= date)
         .sort((a, b) => a.lot.expiryDate.localeCompare(b.lot.expiryDate));
       let firstLot = lots[0]?.lot.id;
       for (const { s, lot } of lots) {

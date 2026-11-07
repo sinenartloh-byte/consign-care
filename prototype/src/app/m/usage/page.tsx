@@ -2,10 +2,11 @@
 
 import { Search, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useMe } from "@/components/mobile/bits";
 import { MScreen } from "@/components/mobile/MScreen";
-import { EmptyState, Input, cx } from "@/components/ui";
+import { EmptyState, Input, PageLoader, cx } from "@/components/ui";
 import { useFmt } from "@/lib/format";
 import { DEMO_TODAY, addDays } from "@/lib/ops";
 import { inMonth, name, usageRows } from "@/lib/selectors";
@@ -31,12 +32,21 @@ function Chip({ label, value, onChange, options }: { label: string; value: strin
   );
 }
 
-export default function UsageCenter() {
+export default function UsagePage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <UsageCenter />
+    </Suspense>
+  );
+}
+
+function UsageCenter() {
+  const sp = useSearchParams();
   const { t, lang, date } = useFmt();
   const d = useData();
   const me = useMe();
   const [q, setQ] = useState("");
-  const [df, setDf] = useState<DateF>("all");
+  const [df, setDf] = useState<DateF>(sp.get("d") === "month" ? "month" : "all");
   const [hf, setHf] = useState("all");
   const [pf, setPf] = useState("all");
 
