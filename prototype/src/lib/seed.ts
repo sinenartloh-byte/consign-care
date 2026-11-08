@@ -11,7 +11,7 @@ import {
   WAREHOUSE,
 } from "./ops";
 
-export const DATA_VERSION = 11;
+export const DATA_VERSION = 12;
 
 /* ---------------------------------------------------------------- mock patients (fictional) */
 
@@ -259,6 +259,7 @@ export function buildSeed(): Data {
     movements: [],
     cases: [],
     usage: [],
+    accruals: [],
     quotations: [],
     customerPos: [],
     incomingPos: [],
