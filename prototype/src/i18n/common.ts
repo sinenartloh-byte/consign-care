@@ -173,6 +173,7 @@ export const common: Dict = {
   "act.poUploaded": { th: "อัปโหลด PO ใหม่ {ref}", en: "New PO uploaded {ref}" },
   "act.poRecorded": { th: "บันทึก PO {ref}", en: "PO {ref} recorded" },
   "act.requisitionSubmitted": { th: "ส่งใบเบิก {ref}", en: "Requisition {ref} submitted" },
+  "act.accrualCreated": { th: "ตัดเข้า PO wait {ref}", en: "Accrual {ref} moved to PO wait" },
   "act.requisitionApproved": { th: "อนุมัติใบเบิก {ref}", en: "Requisition {ref} approved" },
   "act.requisitionRejected": { th: "ไม่อนุมัติใบเบิก {ref}", en: "Requisition {ref} rejected" },
   "act.requisitionIssued": { th: "จ่ายสินค้าตามใบเบิก {ref}", en: "Requisition {ref} issued" },

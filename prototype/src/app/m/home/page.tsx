@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Plus, Settings } from "lucide-react";
+import { AlertTriangle, Bell, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LangToggle } from "@/components/LangToggle";
@@ -9,7 +9,7 @@ import { MScreen } from "@/components/mobile/MScreen";
 import { Avatar } from "@/components/PersonaSwitcher";
 import { Button, EmptyState, StatTile } from "@/components/ui";
 import { useT } from "@/i18n";
-import { accountStats, name } from "@/lib/selectors";
+import { docStats, name } from "@/lib/selectors";
 import { useFmt } from "@/lib/format";
 import { useData } from "@/lib/store";
 
@@ -18,7 +18,7 @@ export default function HomePage() {
   const router = useRouter();
   const d = useData();
   const me = useMe();
-  const stats = accountStats(d, me.hospitalIds);
+  const stats = docStats(d, me.hospitalIds);
   const { money } = useFmt();
   const unread = d.notifications.filter((n) => (n.userId === me.id || n.userId === "*") && !n.read).length;
   const activity = d.activity.filter((a) => !a.hospitalId || me.hospitalIds.includes(a.hospitalId)).slice(0, 6);
@@ -55,12 +55,30 @@ export default function HomePage() {
               {t("g.viewAll")}
             </Link>
           </div>
+          <button
+            onClick={() => router.push("/m/expiry?t=near")}
+            disabled={stats.nearExp.qty === 0}
+            className="mb-3 flex w-full items-center gap-3 rounded-2xl bg-rose-50 p-3 text-left ring-1 ring-rose-200 transition hover:bg-rose-100 active:scale-[0.99] disabled:hidden"
+          >
+            <span className="grid h-10 w-10 shrink-0 animate-pulse place-items-center rounded-full bg-rose-500 text-white">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-rose-700">{t("m.home.nearAlert", { n: stats.nearExp.qty })}</span>
+              <span className="block text-xs text-rose-600/80">{t("m.home.nearAlertHint")}</span>
+            </span>
+          </button>
           <div className="grid grid-cols-2 gap-3 @3xl/app:grid-cols-5">
-            <StatTile tone="purple" value={stats.usageMonth} label={t("m.home.usage")} onClick={() => router.push("/m/usage?d=month")} />
-            <StatTile tone="blue" value={stats.quotation} label={t("m.home.quotation")} onClick={() => router.push("/m/cases?f=po&s=accounts")} />
-            <StatTile tone="green" value={<span className="text-lg">{money(stats.accrual, 0)}</span>} label={t("m.home.accrual")} onClick={() => router.push("/m/cases?f=accrual&s=accounts")} />
-            <StatTile tone="slate" value={stats.writeOff} label={t("m.home.writeOff")} onClick={() => router.push("/m/expiry?t=expired")} />
-            <StatTile tone="rose" value={stats.nearExp} label={t("m.home.nearExp")} className="col-span-2 @3xl/app:col-span-1" onClick={() => router.push("/m/expiry?t=near")} />
+            <StatTile tone="purple" value={stats.usage.qty} label={t("m.home.usageQty")} onClick={() => router.push("/m/usage?d=month")} />
+            <StatTile
+              tone="green"
+              value={<span className="text-lg">{money(stats.accrual.value, 0)}</span>}
+              label={`${t("m.home.accrualDoc")} · ${stats.accrual.count}`}
+              onClick={() => router.push("/m/documents?t=accrual")}
+            />
+            <StatTile tone="blue" value={stats.requisition.count} label={t("m.home.requisitionDoc")} onClick={() => router.push("/m/documents?t=requisition")} />
+            <StatTile tone="slate" value={stats.writeOff.qty} label={t("m.home.writeOffDoc")} onClick={() => router.push("/m/expiry?t=expired")} />
+            <StatTile tone="orange" value={stats.centralUsage.qty} label={t("m.home.centralUsage")} onClick={() => router.push("/m/summary")} />
           </div>
           <Link href="/m/cases/new" className="mt-3 block">
             <Button size="lg" className="w-full">

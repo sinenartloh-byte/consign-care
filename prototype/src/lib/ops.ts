@@ -3,6 +3,7 @@
  * Every function mutates the draft `d` it receives (the store clones before calling).
  */
 import type {
+  Accrual,
   Case,
   CaseStatus,
   CustomerPO,
@@ -592,6 +593,65 @@ export function issueRequisition(d: Data, actor: string, id: string) {
     setCaseStatus(c, "REQUISITIONED", at);
     notify(d, c.repId, "requisitionIssued", c.no, `/m/cases/${c.id}`, c.hospitalId, at);
   }
+}
+
+/* ------------------------------------------------------------------ near expiry (Sales EP) */
+
+export function nextAccrualNo(d: Data) {
+  const n = maxSeq(d.accruals.map((a) => a.no), /^ACR-2026-(\d+)$/) + 1;
+  return `ACR-2026-${String(n).padStart(3, "0")}`;
+}
+
+/**
+ * Near-exp, option 1: ask for a replacement. A requisition to the warehouse for the same product, the near-exp lot
+ * stays at the hospital until the new stock arrives.
+ */
+export function requestNearExpReplacement(
+  d: Data,
+  actor: string,
+  input: { hospitalId: string; productId: string; lotId: string; qty: number },
+): Requisition | undefined {
+  const lot = d.lots.find((l) => l.id === input.lotId);
+  if (!lot || input.qty <= 0) return undefined;
+  const department = d.departments.find((x) => x.id !== "d-wh")?.id ?? "";
+  return createRequisition(d, actor, {
+    departmentId: department,
+    purpose: `Near exp: LOT ${lot.lotNo} (EXP ${lot.expiryDate})`,
+    hospitalId: input.hospitalId,
+    items: [{ productId: input.productId, qty: input.qty, reason: "Near exp" }],
+  });
+}
+
+/**
+ * Near-exp, option 2: accrue. The units leave the hospital's inventory (On shelf) at once and wait in PO wait for the
+ * hospital's PO. They are not billed until the PO arrives.
+ */
+export function accrueNearExp(
+  d: Data,
+  actor: string,
+  input: { hospitalId: string; productId: string; lotId: string; qty: number },
+  at = nowIso(),
+): Accrual | undefined {
+  const lot = d.lots.find((l) => l.id === input.lotId);
+  if (!lot || input.qty <= 0) return undefined;
+  const no = nextAccrualNo(d);
+  takeStock(d, actor, hospitalLoc(input.hospitalId), input.productId, input.qty, "OUT", undefined, "ACCRUAL", no, at, input.lotId);
+  const acc: Accrual = {
+    id: uid("acr"),
+    no,
+    hospitalId: input.hospitalId,
+    productId: input.productId,
+    lotId: input.lotId,
+    qty: input.qty,
+    unitPrice: priceFor(d, input.hospitalId, input.productId),
+    status: "PO_WAIT",
+    reason: `Near exp: LOT ${lot.lotNo} (EXP ${lot.expiryDate})`,
+    createdBy: actor,
+    createdAt: at,
+  };
+  d.accruals.unshift(acc);
+  log(d, actor, "accrualCreated", "ACCRUAL", acc.id, acc.no, input.hospitalId, at);
+  return acc;
 }
 
 /* ------------------------------------------------------------------ purchase request */

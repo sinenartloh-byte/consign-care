@@ -47,6 +47,7 @@ export const TABLES = [
   "movements",
   "cases",
   "usage",
+  "accruals",
   "quotations",
   "customerPos",
   "incomingPos",

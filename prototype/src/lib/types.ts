@@ -234,6 +234,24 @@ export interface IncomingPO {
   channel: "EMAIL" | "LINE";
 }
 
+/**
+ * Accrual (Sales EP): near-expiry consignment stock the rep takes out of the hospital's inventory. It leaves On shelf /
+ * Usage at once and waits in PO wait until the hospital's PO arrives.
+ */
+export interface Accrual {
+  id: string;
+  no: string;
+  hospitalId: string;
+  productId: string;
+  lotId: string;
+  qty: number;
+  unitPrice: number;
+  status: "PO_WAIT";
+  reason: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 export type RequisitionStatus = "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "ISSUED";
 
 export interface RequisitionItem {
@@ -370,6 +388,7 @@ export interface Data {
   movements: StockMovement[];
   cases: Case[];
   usage: UsageItem[];
+  accruals: Accrual[];
   quotations: Quotation[];
   customerPos: CustomerPO[];
   incomingPos: IncomingPO[];

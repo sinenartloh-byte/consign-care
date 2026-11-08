@@ -87,6 +87,32 @@ export function accountStats(d: Data, hospitalIds: string[]) {
   };
 }
 
+/**
+ * Sales EP home: the five documents of the rep's accounts.
+ * Usage = units recorded this month · Accrual = PO-wait accruals · Requisition = open requisitions (not yet issued) ·
+ * Write off = expired units still on the shelf · Centralized usage = every usage record across the accounts (all months).
+ */
+export function docStats(d: Data, hospitalIds: string[]) {
+  const usage = usageRows(d).filter((r) => hospitalIds.includes(r.c.hospitalId));
+  const usageMonth = usage.filter((r) => inMonth(r.c.caseDate));
+  const accruals = d.accruals.filter((a) => hospitalIds.includes(a.hospitalId) && a.status === "PO_WAIT");
+  const requisitions = d.requisitions.filter((r) => r.hospitalId && hospitalIds.includes(r.hospitalId) && (r.status === "SUBMITTED" || r.status === "APPROVED"));
+  const exp = accountExpiry(d, hospitalIds);
+  const sum = <T,>(xs: T[], f: (x: T) => number) => xs.reduce((s, x) => s + f(x), 0);
+  return {
+    usage: { qty: sum(usageMonth, (r) => r.u.qty), count: usageMonth.length },
+    accrual: {
+      count: accruals.length,
+      qty: sum(accruals, (a) => a.qty),
+      value: sum(accruals, (a) => a.qty * a.unitPrice),
+    },
+    requisition: { count: requisitions.length },
+    writeOff: { qty: sum(exp.filter((x) => x.daysLeft < 0), (x) => x.qty) },
+    nearExp: { qty: sum(exp.filter((x) => x.daysLeft >= 0 && x.daysLeft <= NEAR_EXP_DAYS), (x) => x.qty) },
+    centralUsage: { qty: sum(usage, (r) => r.u.qty), count: usage.length },
+  };
+}
+
 export function repStats(d: Data, userId: string) {
   return caseStats(d, d.cases.filter((c) => c.repId === userId));
 }
